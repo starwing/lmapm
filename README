@@ -1,0 +1,39 @@
+This is a big-number library for Lua 5.1. It is based on the arbitrary
+precision library MAPM written by Michael C. Ring. MAPM is available at
+	http://www.tc.umn.edu/~ringx004/mapm-main.html
+
+To try the library, edit Makefile to reflect your installation of Lua and
+MAPM. Then run make. This will build the library and run a simple test.
+For detailed installation instructions, see
+	http://www.tecgraf.puc-rio.br/~lhf/ftp/lua/install.html
+
+There is no manual but the library is simple and intuitive; see the summary
+below. Read also test.lua, which shows the library in action.
+
+This code is hereby placed in the public domain. MAPM has its own license.
+Please send comments, suggestions, and bug reports to lhf@tecgraf.puc-rio.br .
+
+-------------------------------------------------------------------------------
+
+mapm library:
+ __add(x,y) 		 cbrt(x) 		 mod(x,y) 
+ __div(x,y) 		 ceil(x) 		 mul(x,y) 
+ __eq(x,y) 		 compare(x,y) 		 neg(x) 
+ __lt(x,y) 		 cos(x) 		 number(x) 
+ __mod(x,y) 		 cosh(x) 		 pow(x,y) 
+ __mul(x,y) 		 digits([n]) 		 round(x) 
+ __pow(x,y) 		 digitsin(x) 		 sign(x) 
+ __sub(x,y) 		 div(x,y) 		 sin(x) 
+ __tostring(x) 		 exp(x) 		 sincos(x) 
+ __unm(x) 		 exponent(x) 		 sinh(x) 
+ abs(x) 		 factorial(x) 		 sqrt(x) 
+ acos(x) 		 floor(x) 		 sub(x,y) 
+ acosh(x) 		 idiv(x,y) 		 tan(x) 
+ add(x,y) 		 inv(x) 		 tanh(x) 
+ asin(x) 		 iseven(x) 		 tonumber(x) 
+ asinh(x) 		 isint(x) 		 tostring(x,[n,exp]) 
+ atan(x) 		 isodd(x) 		 version 
+ atan2(y,x) 		 log(x) 
+ atanh(x) 		 log10(x) 
+
+-------------------------------------------------------------------------------
