@@ -2,21 +2,30 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define LUA_LIB
 #include <lua.h>
 #include <lauxlib.h>
+
 
 #define LM_NAME         "mapm"
 #define LM_VERSION      LM_NAME " " MAPM_LIB_SHORT_VERSION
 #define LM_COPYRIGHT    MAPM_LIB_VERSION
 #define LM_TYPE         "mapm bignumber"
 
+
+/* use lm_State instead of static variables (close defaultly) */
+#ifndef LM_STATE
+#  define LM_STATE 0
+#endif
+
 /* options */
-#define LM_WORKS            2 /* count of static working M_APM object. */
-#define LM_INPLACE          0 /* it must 0, if you use lm_mul :-( */
+#define LM_WORKS            2  /* count of static working M_APM object. */
+#define LM_INPLACE          0  /* it must 0, if you use lm_mul :-( */
 #define LM_DEFALUT_TS_PREC  -1 /* default precision of tostring */
 #define LM_DEFALUT_PREC     10 /* default precision in float pointing calculate */
+
 
 #if LUA_VERSION_NUM == 501
 #define luaL_newlib(L, b)           luaL_register(L, lua_tostring(L, 1), b)
@@ -38,9 +47,36 @@ void *luaL_testudata (lua_State *L, int ud, const char *tname) {
 }
 #endif
 
+
+#if LM_STATE
+
+#define GET_STATE    lm_State *state = \
+        (lm_State*)lua_touserdata(L, lua_upvalueindex(1));
+#define S(field)     (state->field)
+typedef struct lm_State lm_State;
+
+struct lm_State {
+    M_APM lm_works[LM_WORKS];
+    int lm_tostring_precision;
+    int lm_precision;
+};
+
+static void lm_state_init(lm_State *state) {
+    memset(S(lm_works), 0, sizeof S(lm_works));
+    S(lm_tostring_precision) = LM_DEFALUT_TS_PREC;
+    S(lm_precision) = LM_DEFALUT_PREC;
+}
+
+#else /* !LM_STATE */
+
+#define GET_STATE   /* nothing */
+#define S(field)    field
 static M_APM lm_works[LM_WORKS] = {NULL};
 static int lm_tostring_precision = LM_DEFALUT_TS_PREC;
 static int lm_precision = LM_DEFALUT_PREC;
+
+#endif
+
 static lua_State *LL = NULL;
 
 void M_apm_log_error_msg(int fatal, char *message) {
@@ -51,18 +87,19 @@ void M_apm_log_error_msg(int fatal, char *message) {
 }
 
 static M_APM lm_get(lua_State *L, int narg) {
+    GET_STATE
     M_APM x = NULL;
     LL = L;
     assert(narg <= LM_WORKS);
     switch (lua_type(L, narg)) {
     case LUA_TNUMBER:
-        if ((x = lm_works[narg-1]) == NULL)
-            x = lm_works[narg-1] = m_apm_init();
+        if ((x = S(lm_works)[narg-1]) == NULL)
+            x = S(lm_works)[narg-1] = m_apm_init();
         m_apm_set_double(x, lua_tonumber(L, narg));
         break;
     case LUA_TSTRING:
-        if ((x = lm_works[narg-1]) == NULL)
-            x = lm_works[narg-1] = m_apm_init();
+        if ((x = S(lm_works)[narg-1]) == NULL)
+            x = S(lm_works)[narg-1] = m_apm_init();
         m_apm_set_string(x, (char*)lua_tostring(L, narg));
         break;
     case LUA_TUSERDATA:
@@ -122,11 +159,12 @@ static int lm_gc(lua_State *L) {
 }
 
 static int lm_freeall(lua_State *L) {
+    GET_STATE
     int i;
     for (i = 0; i < LM_WORKS; ++i) {
-        if (lm_works[i] != NULL) {
-            m_apm_free(lm_works[i]);
-            lm_works[i] = NULL;
+        if (S(lm_works)[i] != NULL) {
+            m_apm_free(S(lm_works)[i]);
+            S(lm_works)[i] = NULL;
         }
     }
     m_apm_free_all_mem();
@@ -134,11 +172,12 @@ static int lm_freeall(lua_State *L) {
 }
 
 static int lm_reset(lua_State *L) {
+    GET_STATE
     int i;
     for (i = 0; i < LM_WORKS; ++i) {
-        if (lm_works[i] != NULL) {
-            m_apm_free(lm_works[i]);
-            lm_works[i] = NULL;
+        if (S(lm_works)[i] != NULL) {
+            m_apm_free(S(lm_works)[i]);
+            S(lm_works)[i] = NULL;
         }
     }
     m_apm_trim_mem_usage();
@@ -146,8 +185,9 @@ static int lm_reset(lua_State *L) {
 }
 
 static int lm_tostring(lua_State *L) {
+    GET_STATE
     char *s;
-    int n = luaL_optint(L, 2, lm_tostring_precision);
+    int n = luaL_optint(L, 2, S(lm_tostring_precision));
     M_APM a = lm_get(L, 1);
     if (lua_toboolean(L, 3)) {
         int m = (n < 0) ? m_apm_significant_digits(a) : n;
@@ -181,13 +221,14 @@ static int lm_set(lua_State *L) {
 }
 
 static int lm_setprecision(lua_State *L) {
-    int precision = lm_precision;
-    int digits = luaL_optint(L, 1, lm_precision);
+    GET_STATE
+    int precision = S(lm_precision);
+    int digits = luaL_optint(L, 1, S(lm_precision));
     if (!lua_isnumber(L, 2))
-        lm_tostring_precision = lua_toboolean(L, 2) ?  -1 : digits;
+        S(lm_tostring_precision) = lua_toboolean(L, 2) ?  -1 : digits;
     else
-        lm_tostring_precision = lua_tonumber(L, 2);
-    lm_precision = digits < 0 ? 0 : digits;
+        S(lm_tostring_precision) = lua_tonumber(L, 2);
+    S(lm_precision) = digits < 0 ? 0 : digits;
     lua_pushinteger(L, precision);
     return 1;
 }
@@ -201,9 +242,10 @@ static int lm_mod_impl(lua_State *L, int inplace) {
 }
 
 static int lm_pow_impl(lua_State *L, int inplace) {
+    GET_STATE
     M_APM a = lm_get(L, 1);
     M_APM x = inplace && LM_INPLACE ? a : m_apm_init();
-    int n = luaL_optint(L, 3, lm_precision);
+    int n = luaL_optint(L, 3, S(lm_precision));
     if (lua_type(L, 2) == LUA_TNUMBER) {
         int b = lua_tonumber(L, 2);
         if (n == 0)
@@ -272,9 +314,10 @@ static int lm_randomseed(lua_State *L) {
 }
 
 static int lm_sin_cos(lua_State *L) {
+    GET_STATE
     M_APM a = lm_get(L, 1);
     M_APM x = m_apm_init(), y = m_apm_init();
-    int n = luaL_optint(L, 2, lm_precision);
+    int n = luaL_optint(L, 2, S(lm_precision));
     m_apm_sin_cos(x, y, n < 0 ? 0 : n, a);
     lm_newvalue(L, x);
     lm_newvalue(L, y);
@@ -350,9 +393,10 @@ static M_APM lm_doMM(lua_State *L, int inplace, mapm_fMM f) {
 }
 
 static M_APM lm_doMnM(lua_State *L, int inplace, mapm_fMnM f) {
+    GET_STATE
     M_APM a = lm_get(L, 1);
     M_APM x = inplace ? a : m_apm_init();
-    int n = luaL_optint(L, 2, lm_precision);
+    int n = luaL_optint(L, 2, S(lm_precision));
     f(x, n < 0 ? 0 : n, a);
     return x;
 }
@@ -365,9 +409,10 @@ static M_APM lm_doMMM(lua_State *L, int inplace, mapm_fMMM f) {
 }
 
 static M_APM lm_doMnMM(lua_State *L, int inplace, mapm_fMnMM f) {
+    GET_STATE
     M_APM a = lm_get(L, 1), b = lm_get(L, 2);
     M_APM x = inplace ? a : m_apm_init();
-    int n = luaL_optint(L, 3, lm_precision);
+    int n = luaL_optint(L, 3, S(lm_precision));
     f(x, n < 0 ? 0 : n, a, b);
     return x;
 }
@@ -461,20 +506,36 @@ static void lm_init_constants(lua_State *L) {
 static void lm_install_freehook(lua_State *L) {
     lua_newuserdata(L, 1);
     lua_newtable(L);
+#if LM_STATE
+    lua_pushvalue(L, -5); /* state */
+    lua_pushcclosure(L, lm_freeall, 1);
+#else
     lua_pushcfunction(L, lm_freeall);
+#endif
     lua_setfield(L, -2, "__gc");
     lua_setmetatable(L, -2);
     lua_setfield(L, -2, "__freeall");
 }
 
 LUALIB_API int luaopen_mapm(lua_State *L) {
+#if LM_STATE
+    lm_state_init(lua_newuserdata(L, sizeof(lm_State)));
+    lua_createtable(L, 0, sizeof(mapm_funcs)/sizeof(mapm_funcs[0])-1);
+    lua_pushvalue(L, -2);
+    luaL_setfuncs(L, mapm_funcs, 1);
+    if (luaL_newmetatable(L, LM_TYPE)) {
+        lua_pushvalue(L, -3);
+        luaL_setfuncs(L, mapm_meta, 1);
+    }
+#else
     luaL_newlib(L, mapm_funcs);
+    if (luaL_newmetatable(L, LM_TYPE))
+        luaL_setfuncs(L, mapm_meta, 0);
+#endif
     lua_pushstring(L, LM_VERSION);
-    lua_setfield(L, -2, "_VERSION");
+    lua_setfield(L, -3, "_VERSION");
     lua_pushstring(L, LM_COPYRIGHT);
-    lua_setfield(L, -2, "_COPYRIGHT");
-    luaL_newmetatable(L, LM_TYPE);
-    luaL_setfuncs(L, mapm_meta, 0);
+    lua_setfield(L, -3, "_COPYRIGHT");
     lua_pushvalue(L, -2);
     lua_setfield(L, -2, "__index");
     lm_install_freehook(L);
@@ -486,4 +547,3 @@ LUALIB_API int luaopen_mapm(lua_State *L) {
     lua_setmetatable(L, -2);
     return 1;
 }
-
