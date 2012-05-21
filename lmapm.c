@@ -21,10 +21,10 @@
 #endif
 
 /* options */
-#define LM_WORKS            2  /* count of static working M_APM object. */
-#define LM_INPLACE          0  /* it must 0, if you use lm_mul :-( */
-#define LM_DEFALUT_TS_PREC  -1 /* default precision of tostring */
-#define LM_DEFALUT_PREC     10 /* default precision in float pointing calculate */
+#define LM_WORKS              2 /* count of static working M_APM object. */
+#define LM_INPLACE            0 /* it must 0, if you use lm_mul :-( */
+#define LM_DEFALUT_TS_PREC   -1 /* default precision of tostring */
+#define LM_DEFALUT_PREC     128 /* default precision in float pointing calculate */
 
 
 #if LUA_VERSION_NUM == 501
@@ -507,7 +507,7 @@ static void lm_install_freehook(lua_State *L) {
     lua_newuserdata(L, 1);
     lua_newtable(L);
 #if LM_STATE
-    lua_pushvalue(L, -5); /* state */
+    lua_pushvalue(L, -5); /* state libtable mttable ud table */
     lua_pushcclosure(L, lm_freeall, 1);
 #else
     lua_pushcfunction(L, lm_freeall);
@@ -542,7 +542,12 @@ LUALIB_API int luaopen_mapm(lua_State *L) {
     lua_pop(L, 1);
     lm_init_constants(L);
     lua_createtable(L, 0, 1);
+#if LM_STATE
+    lua_pushvalue(L, -3); /* state libtable table */
+    lua_pushcclosure(L, lm_libnew, 1);
+#else
     lua_pushcfunction(L, lm_libnew);
+#endif
     lua_setfield(L, -2, "__call");
     lua_setmetatable(L, -2);
     return 1;
