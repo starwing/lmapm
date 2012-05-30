@@ -245,13 +245,14 @@ static int lm_pow_impl(lua_State *L, int inplace) {
     GET_STATE
     M_APM a = lm_get(L, 1);
     M_APM x = inplace && LM_INPLACE ? a : m_apm_init();
+    lua_Number b = lua_tonumber(L, 2);
     int n = luaL_optint(L, 3, S(lm_precision));
-    if (lua_type(L, 2) == LUA_TNUMBER) {
-        int b = lua_tonumber(L, 2);
-        if (n == 0)
-            m_apm_integer_pow_nr(x, a, b);
+    if (lua_type(L, 2) == LUA_TNUMBER && b == (int)b) {
+        int nb = (int)b;
+        if (lua_isnoneornil(L, 3) && m_apm_is_integer(a))
+            m_apm_integer_pow_nr(x, a, nb);
         else
-            m_apm_integer_pow(x, n < 0 ? 0 : n, a, b);
+            m_apm_integer_pow(x, n < 0 ? 0 : n, a, nb);
     }
     else {
         M_APM b = lm_get(L, 2);

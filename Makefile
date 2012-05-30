@@ -1,7 +1,10 @@
 # This Makefile is based on LuaSec's Makefile. Thanks to the LuaSec developers.
 # Inform the location to intall the modules
-MAPM_INCDIR = -I../mapm_4.9.5a
-MAPM_LIBS   = -L../mapm_4.9.5a -lmapm
+MAPM_V = mapm_4.9.5a
+LUA_V = lua52
+
+MAPM_INCDIR = -I$(MAPM_V)
+MAPM_LIBS   = -L$(MAPM_V) -lmapm
 
 LUA_PATH   = /usr/share/lua/5.1
 LUA_CPATH  = /usr/lib/lua/5.1
@@ -31,8 +34,8 @@ MAC_ENV     = env MACOSX_DEPLOYMENT_TARGET='$(MACVER)'
 MAC_CFLAGS  = -O2 -fPIC -fno-common
 MAC_LDFLAGS = -bundle -undefined dynamic_lookup -fPIC
 
-MGW_LUA_INCDIR = -Id:/lua/include
-MGW_LUA_LIBS = d:/lua/lua51.dll
+MGW_LUA_INCDIR = -Id:/$(LUA_V)/include
+MGW_LUA_LIBS = d:/$(LUA_V)/$(LUA_V).dll
 MGW_CMOD = mapm.dll
 MGW_CFLAGS = -O2 -mdll -DLUA_BUILD_AS_DLL
 MGW_LDFLAGS = -mdll

@@ -2,3 +2,5 @@
 *.obj
 *.dll
 *.so
+*.zip
+mapm*/
