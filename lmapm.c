@@ -456,6 +456,7 @@ static luaL_Reg mapm_funcs[] = {
     ENTRY(pow),    ENTRY(ipow),
     ENTRY(divrem), ENTRY(idivrem),
     ENTRY(cmp),
+    ENTRY(eq),
     ENTRY(random),
     ENTRY(randomseed),
     ENTRY(sin_cos),
