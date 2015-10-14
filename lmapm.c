@@ -187,7 +187,7 @@ static int lm_reset(lua_State *L) {
 static int lm_tostring(lua_State *L) {
     GET_STATE
     char *s;
-    int n = luaL_optint(L, 2, S(lm_tostring_precision));
+    int n = (int)luaL_optinteger(L, 2, S(lm_tostring_precision));
     M_APM a = lm_get(L, 1);
     if (lua_toboolean(L, 3)) {
         int m = (n < 0) ? m_apm_significant_digits(a) : n;
@@ -223,7 +223,7 @@ static int lm_set(lua_State *L) {
 static int lm_setprecision(lua_State *L) {
     GET_STATE
     int precision = S(lm_precision);
-    int digits = luaL_optint(L, 1, S(lm_precision));
+    int digits = (int)luaL_optinteger(L, 1, S(lm_precision));
     if (!lua_isnumber(L, 2))
         S(lm_tostring_precision) = lua_toboolean(L, 2) ?  -1 : digits;
     else
@@ -246,7 +246,7 @@ static int lm_pow_impl(lua_State *L, int inplace) {
     M_APM a = lm_get(L, 1);
     M_APM x = inplace && LM_INPLACE ? a : m_apm_init();
     lua_Number b = lua_tonumber(L, 2);
-    int n = luaL_optint(L, 3, S(lm_precision));
+    int n = (int)luaL_optinteger(L, 3, S(lm_precision));
     if (lua_type(L, 2) == LUA_TNUMBER && b == (int)b) {
         int nb = (int)b;
         if (lua_isnoneornil(L, 3) && m_apm_is_integer(a))
@@ -318,7 +318,7 @@ static int lm_sin_cos(lua_State *L) {
     GET_STATE
     M_APM a = lm_get(L, 1);
     M_APM x = m_apm_init(), y = m_apm_init();
-    int n = luaL_optint(L, 2, S(lm_precision));
+    int n = (int)luaL_optinteger(L, 2, S(lm_precision));
     m_apm_sin_cos(x, y, n < 0 ? 0 : n, a);
     lm_newvalue(L, x);
     lm_newvalue(L, y);
@@ -397,7 +397,7 @@ static M_APM lm_doMnM(lua_State *L, int inplace, mapm_fMnM f) {
     GET_STATE
     M_APM a = lm_get(L, 1);
     M_APM x = inplace ? a : m_apm_init();
-    int n = luaL_optint(L, 2, S(lm_precision));
+    int n = (int)luaL_optinteger(L, 2, S(lm_precision));
     f(x, n < 0 ? 0 : n, a);
     return x;
 }
@@ -413,7 +413,7 @@ static M_APM lm_doMnMM(lua_State *L, int inplace, mapm_fMnMM f) {
     GET_STATE
     M_APM a = lm_get(L, 1), b = lm_get(L, 2);
     M_APM x = inplace ? a : m_apm_init();
-    int n = luaL_optint(L, 3, S(lm_precision));
+    int n = (int)luaL_optinteger(L, 3, S(lm_precision));
     f(x, n < 0 ? 0 : n, a, b);
     return x;
 }
