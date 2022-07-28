@@ -224,10 +224,10 @@ static int lm_setprecision(lua_State *L) {
     GET_STATE
     int precision = S(lm_precision);
     int digits = (int)luaL_optinteger(L, 1, S(lm_precision));
-    if (!lua_isnumber(L, 2))
+    if (!lua_isinteger(L, 2))
         S(lm_tostring_precision) = lua_toboolean(L, 2) ?  -1 : digits;
     else
-        S(lm_tostring_precision) = lua_tonumber(L, 2);
+        S(lm_tostring_precision) = (int)lua_tointeger(L, 2);
     S(lm_precision) = digits < 0 ? 0 : digits;
     lua_pushinteger(L, precision);
     return 1;
@@ -435,51 +435,6 @@ EXPORT_FUNCTIONS
 #undef FUNC_S
 #undef FUNC_I
 
-static luaL_Reg mapm_funcs[] = {
-    { "delete",   lm_gc           },
-    { "setprec",  lm_setprecision },
-#define FUNC_R(s, name, func) { #name, lm_##name },
-#define FUNC_S(s, name, func) { #name, lm_##name },
-#define FUNC_I(s, name, func) { #name, lm_##name }, { "i"#name, lm_i##name },
-    EXPORT_FUNCTIONS
-#undef FUNC_R
-#undef FUNC_S
-#undef FUNC_I
-#define ENTRY(name) { #name, lm_##name }
-    ENTRY(new),
-    ENTRY(freeall),
-    ENTRY(reset),
-    ENTRY(tostring),
-    ENTRY(tonumber),
-    ENTRY(set),
-    ENTRY(mod),    ENTRY(imod),
-    ENTRY(pow),    ENTRY(ipow),
-    ENTRY(divrem), ENTRY(idivrem),
-    ENTRY(cmp),
-    ENTRY(eq),
-    ENTRY(random),
-    ENTRY(randomseed),
-    ENTRY(sin_cos),
-#undef ENTRY
-    { NULL, NULL }
-};
-
-static luaL_Reg mapm_meta[] = {
-    { "__add", lm_add },
-    { "__sub", lm_sub },
-    { "__mul", lm_mul },
-    { "__div", lm_div },
-    { "__mod", lm_mod },
-    { "__pow", lm_pow },
-    { "__unm", lm_neg },
-    { "__eq",  lm_eq  },
-    { "__lt",  lm_lt  },
-    { "__gc",  lm_gc  },
-    { "__len", lm_digits },
-    { "__tostring", lm_tostring },
-    { NULL, NULL }
-};
-
 static void lm_init_constants(lua_State *L) {
     struct {
         const char *name;
@@ -520,6 +475,55 @@ static void lm_install_freehook(lua_State *L) {
 }
 
 LUALIB_API int luaopen_mapm(lua_State *L) {
+    luaL_Reg mapm_funcs[] = {
+        { "delete",   lm_gc           },
+        { "setprec",  lm_setprecision },
+#define FUNC_R(s, name, func) { #name, lm_##name },
+#define FUNC_S(s, name, func) { #name, lm_##name },
+#define FUNC_I(s, name, func) { #name, lm_##name }, { "i"#name, lm_i##name },
+        EXPORT_FUNCTIONS
+#undef FUNC_R
+#undef FUNC_S
+#undef FUNC_I
+#define ENTRY(name) { #name, lm_##name }
+        ENTRY(new),
+        ENTRY(freeall),
+        ENTRY(reset),
+        ENTRY(tostring),
+        ENTRY(tonumber),
+        ENTRY(set),
+        ENTRY(mod),    ENTRY(imod),
+        ENTRY(pow),    ENTRY(ipow),
+        ENTRY(divrem), ENTRY(idivrem),
+        ENTRY(cmp),
+        ENTRY(eq),
+        ENTRY(random),
+        ENTRY(randomseed),
+        ENTRY(sin_cos),
+#undef ENTRY
+        { NULL, NULL }
+    };
+
+    luaL_Reg mapm_meta[] = {
+        { "__len",   lm_digits },
+        { "__idiv",  lm_divi   },
+        { "__close", lm_gc     },
+#define ENTRY(name) { "__" #name, lm_##name }
+        ENTRY(add),
+        ENTRY(sub),
+        ENTRY(mul),
+        ENTRY(div),
+        ENTRY(mod),
+        ENTRY(pow),
+        ENTRY(neg),
+        ENTRY(eq),
+        ENTRY(lt),
+        ENTRY(gc),
+        ENTRY(tostring),
+#undef  ENTRY
+        { NULL, NULL }
+    };
+
 #if LM_STATE
     lm_state_init(lua_newuserdata(L, sizeof(lm_State)));
     lua_createtable(L, 0, sizeof(mapm_funcs)/sizeof(mapm_funcs[0])-1);
@@ -554,3 +558,7 @@ LUALIB_API int luaopen_mapm(lua_State *L) {
     lua_setmetatable(L, -2);
     return 1;
 }
+
+/* win32cc: flags+='-mdll -O3  -DLUA_BUILD_AS_DLL -Imapm' input+='mapm_one.c'
+ * win32cc: output='mapm.dll' libs+='-llua54' */
+
