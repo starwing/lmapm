@@ -3,3 +3,6 @@
 *.dll
 *.so
 *.zip
+*.exp
+*.lib
+tags
